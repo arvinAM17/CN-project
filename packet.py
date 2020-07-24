@@ -14,6 +14,8 @@ class RequestPacket:
         self.can_gzip: bool = False
         self.code = self.set_values()
         self.code_msg = code_message[self.code]
+        self.html_file = None
+        self.file_type = None
 
     def set_values(self):
         lines = self.string.split('\n')
@@ -70,6 +72,13 @@ class RequestPacket:
         log += '"' + '"' + str(self.code) + ' ' + code_message[self.code] + '"\n'
         return log
 
+    def set_file(self, html_file=None, file_type=None):
+        if html_file:
+            self.html_file = html_file
+            self.file_type = file_type
+        else:
+            self.code = 404
+
 
 class ResponsePacket:
     def __init__(self, request: RequestPacket):
@@ -81,11 +90,16 @@ class ResponsePacket:
         code = self.request_packet.code
         message = ''
         if code == 200:
-            pass
-        if code == 404:
-            pass
+            message += self.request_packet.request_version + ' ' + str(code) + ' ' + code_message[code] + '\n'
+            message += 'Connection: close\n'
+            message += 'Content-Length: ' + str(len(self.request_packet.html_file)) + '\n'
+            message += 'Content-Type: ' + self.request_packet.file_type + '\n'
+            message += 'Date: ' + self.get_date() + '\n'
+            message += '\n'
+            message += '[' + self.request_packet.html_file + ']\n'
+            
         else:
-            message += self.request_packet.request_version + str(code) + code_message[code] + '\n'
+            message += self.request_packet.request_version + ' ' + str(code) + ' ' + code_message[code] + '\n'
             message += 'Connection: close\n'
             message += 'Content-Length: ' + str(len(error_message[code])) + '\n'
             message += 'Content-Type: text/html\n'
@@ -93,7 +107,7 @@ class ResponsePacket:
                 message += 'Allow: GET\n'
             message += 'Date: ' + self.get_date() + '\n'
             message += '\n'
-            message += error_message[code] + '\n'
+            message += '[' + error_message[code] + ']\n'
         return message
 
     @staticmethod
