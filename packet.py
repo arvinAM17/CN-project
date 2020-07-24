@@ -1,22 +1,5 @@
-TEXT_HTML_ENCODING = 0
-TEXT_PLAIN_ENCODING = 1
-IMG_JPG_ENCODING = 2
-IMG_JPEG_ENCODING = 3
-IMG_PNG_ENCODING = 4
-GZIP_ENCODING = 5
-
-KEEP_ALIVE_CONNECTION = 0
-CLOSED = 1
-
-code_message = {
-    200: 'OK',
-    400: 'Bad Request',
-    501: 'Not Implemented',
-    405: 'Method Not Allowed',
-    404: 'Not Found',
-}
-
-standard_methods = ['GET', 'DELETE', 'HEAD', 'POST', 'PUT']
+from constants import *
+import datetime
 
 
 class RequestPacket:
@@ -81,6 +64,47 @@ class RequestPacket:
     def request_string(self) -> str:
         return ' '.join([self.request_method, self.request_address, self.request_version])
 
+    def log(self) -> str:
+        log = '[' + ResponsePacket.get_date() + '] '
+        log += '"' + self.request_string() + '" '
+        log += '"' + '"' + str(self.code) + ' ' + code_message[self.code] + '"\n'
+        return log
+
 
 class ResponsePacket:
-    pass
+    def __init__(self, request: RequestPacket):
+        self.request_packet: RequestPacket = request
+        self.message: str = self.create_response()
+        pass
+
+    def create_response(self) -> str:
+        code = self.request_packet.code
+        message = ''
+        if code == 200:
+            pass
+        if code == 404:
+            pass
+        else:
+            message += self.request_packet.request_version + str(code) + code_message[code] + '\n'
+            message += 'Connection: close\n'
+            message += 'Content-Length: ' + str(len(error_message[code])) + '\n'
+            message += 'Content-Type: text/html\n'
+            if code == 405:
+                message += 'Allow: GET\n'
+            message += 'Date: ' + self.get_date() + '\n'
+            message += '\n'
+            message += error_message[code] + '\n'
+        return message
+
+    @staticmethod
+    def get_date() -> str:
+        date = datetime.datetime.utcnow()
+        weekday = day_of_week[date.weekday()] + ', '
+        day = str(date.day) + ' '
+        month = months[date.month] + ' '
+        year = str(date.year) + ' '
+        hour = str(date.hour) + ':'
+        minute = str(date.minute) + ':'
+        second = str(date.second) + ' '
+        time_zone = 'GMT'
+        return weekday + day + month + year + hour + minute + second + time_zone
