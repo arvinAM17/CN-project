@@ -31,8 +31,9 @@ class Server:
                 break
 
             req = RequestPacket(str(data, 'utf-8'))
-            print(req.connection_type)
-
+            print('--code:', req.code)
+            print('--version', req.request_version)
+            print('--log:', req.log())
             # data = data[::-1]
             # c.send(data)
 

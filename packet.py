@@ -18,15 +18,19 @@ class RequestPacket:
         self.file_type = None
 
     def set_values(self):
-        lines = self.string.split('\n')
-        request_line = lines[0].split()
+        lines = self.string.split('\r\n')
+        request_line = lines[0].split(' ')
         if len(request_line) != 3:
             return 400
+        temp_lines = []
         for i in range(1, len(lines)):
             if lines[i] == '':
                 continue
             if len(lines[i].split(': ')) != 2:
+                print('here', len(lines[i]))
                 return 400
+            temp_lines.append(lines[i].split('\r')[0])
+        lines = temp_lines
         self.request_method = request_line[0]
         self.request_address = request_line[1]
         self.request_version = request_line[2]
@@ -64,12 +68,13 @@ class RequestPacket:
         return 200
 
     def request_string(self) -> str:
-        return ' '.join([self.request_method, self.request_address, self.request_version])
+        return ' '.join([self.request_method, self.request_address, self.request_version.split('\r')[0]])
 
     def log(self) -> str:
-        log = '[' + ResponsePacket.get_date() + '] '
-        log += '"' + self.request_string() + '" '
-        log += '"' + '"' + str(self.code) + ' ' + code_message[self.code] + '"\n'
+        log = ''
+        log += '[' + ResponsePacket.get_date() + '] '
+        log += '\"' + self.request_string() + '\" '
+        log += '\"' + str(self.code) + ' ' + code_message[self.code] + '\"'
         return log
 
     def set_file(self, html_file=None, file_type=None):
@@ -97,7 +102,7 @@ class ResponsePacket:
             message += 'Date: ' + self.get_date() + '\n'
             message += '\n'
             message += '[' + self.request_packet.html_file + ']\n'
-            
+
         else:
             message += self.request_packet.request_version + ' ' + str(code) + ' ' + code_message[code] + '\n'
             message += 'Connection: close\n'
