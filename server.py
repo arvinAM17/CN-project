@@ -2,6 +2,7 @@
 import socket
 import threading
 from packet import RequestPacket, ResponsePacket
+import gzip
 
 
 class Server:
@@ -32,10 +33,25 @@ class Server:
 
             req = RequestPacket(str(data, 'utf-8'))
             print('--code:', req.code)
-            print('--version', req.request_version)
+            print('--version', req.can_gzip)
             print('--log:', req.log())
-            # data = data[::-1]
-            # c.send(data)
+
+            if req.request_address == '/':
+                with open("Files/index.html", "rb") as html:
+                    f = html.read()
+                req.set_file(f, 'text/html')
+
+            elif req.request_address == '/123.jpg':
+                with open("Files/123.jpg", "rb") as image:
+                    f = image.read()
+                if req.can_gzip:
+                    req.set_file(gzip.compress(f), 'image/jpg')
+                else:
+                    req.set_file(f, 'image/jpg')
+            else:
+                req.set_file()
+            to_send = ResponsePacket(req).message
+            c.send(to_send)
 
         c.close()
 

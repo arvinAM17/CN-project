@@ -88,10 +88,10 @@ class RequestPacket:
 class ResponsePacket:
     def __init__(self, request: RequestPacket):
         self.request_packet: RequestPacket = request
-        self.message: str = self.create_response()
+        self.message: bytes = self.create_response()
         pass
 
-    def create_response(self) -> str:
+    def create_response(self) -> bytes:
         code = self.request_packet.code
         message = ''
         if code == 200:
@@ -101,19 +101,27 @@ class ResponsePacket:
             message += 'Content-Type: ' + self.request_packet.file_type + '\n'
             message += 'Date: ' + self.get_date() + '\n'
             message += '\n'
-            message += '[' + self.request_packet.html_file + ']\n'
+            if type(self.request_packet.html_file) == str:
+                message += self.request_packet.html_file
+                message_bytes = bytes(message, 'utf-8')
+            else:
+                message_bytes = bytes(message, 'utf-8')
+                message_bytes += self.request_packet.html_file
 
         else:
+            mes_to_send='<!DOCTYPE html>\n<html>\n<body>\n<h1>' + error_message[code] + '</h1>\n</body>\n</html>\n'
             message += self.request_packet.request_version + ' ' + str(code) + ' ' + code_message[code] + '\n'
             message += 'Connection: close\n'
-            message += 'Content-Length: ' + str(len(error_message[code])) + '\n'
+            message += 'Content-Length: ' + str(len(mes_to_send)) + '\n'
             message += 'Content-Type: text/html\n'
             if code == 405:
                 message += 'Allow: GET\n'
             message += 'Date: ' + self.get_date() + '\n'
             message += '\n'
-            message += '[' + error_message[code] + ']\n'
-        return message
+            message += mes_to_send
+            message_bytes = bytes(message, 'utf-8')
+            print('##############################'+error_message[code])
+        return message_bytes
 
     @staticmethod
     def get_date() -> str:
