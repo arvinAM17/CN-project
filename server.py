@@ -7,8 +7,8 @@ import gzip
 
 class Server:
     def __init__(self):
-        self.port = 12345
-        self.host = ""
+        self.port = 8080
+        self.host = "localhost"
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.bind((self.host, self.port))
@@ -26,15 +26,16 @@ class Server:
     def communicate(self, c: socket.socket):
         while True:
             data = c.recv(1024)
-            print(str(data, 'utf-8'))
+            # print(str(data, 'utf-8'))
             if not data:
                 print('Bye')
                 break
 
             req = RequestPacket(str(data, 'utf-8'))
-            print('--code:', req.code)
-            print('--version', req.can_gzip)
-            print('--log:', req.log())
+            # print('--code:', req.code)
+            # print('--version', req.can_gzip)
+            # print('--log:', req.log())
+            # print('--gzip:', req.can_gzip)
 
             if req.request_address == '/':
                 with open("Files/index.html", "rb") as html:
@@ -44,8 +45,9 @@ class Server:
             elif req.request_address == '/123.jpg':
                 with open("Files/123.jpg", "rb") as image:
                     f = image.read()
+
                 if req.can_gzip:
-                    req.set_file(gzip.compress(f), 'image/jpg')
+                    req.set_file(gzip.compress(f), 'gzip')
                 else:
                     req.set_file(f, 'image/jpg')
             else:

@@ -109,7 +109,7 @@ class ResponsePacket:
                 message_bytes += self.request_packet.html_file
 
         else:
-            mes_to_send='<!DOCTYPE html>\n<html>\n<body>\n<h1>' + error_message[code] + '</h1>\n</body>\n</html>\n'
+            mes_to_send = '<!DOCTYPE html>\n<html>\n<body>\n<h1>' + error_message[code] + '</h1>\n</body>\n</html>\n'
             message += self.request_packet.request_version + ' ' + str(code) + ' ' + code_message[code] + '\n'
             message += 'Connection: close\n'
             message += 'Content-Length: ' + str(len(mes_to_send)) + '\n'
@@ -120,7 +120,7 @@ class ResponsePacket:
             message += '\n'
             message += mes_to_send
             message_bytes = bytes(message, 'utf-8')
-            print('##############################'+error_message[code])
+            print('##############################' + error_message[code])
         return message_bytes
 
     @staticmethod
