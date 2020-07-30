@@ -20,9 +20,9 @@ standard_methods = ['GET', 'DELETE', 'HEAD', 'POST', 'PUT']
 
 error_message = {
     400: 'Request message not in the right format.',
-    501: 'This request method is not implemented.',
-    405: 'This request method is not allowed',
-    404: 'The requested file is not found',
+    501: 'This request method not implemented.',
+    405: 'This request method not allowed',
+    404: 'The requested file not found',
 }
 
 months = {

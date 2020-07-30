@@ -99,6 +99,8 @@ class ResponsePacket:
             message += 'Connection: close\n'
             message += 'Content-Length: ' + str(len(self.request_packet.html_file)) + '\n'
             message += 'Content-Type: ' + self.request_packet.file_type + '\n'
+            if self.request_packet.can_gzip:
+                message += 'Content-Encoding: gzip \n'
             message += 'Date: ' + self.get_date() + '\n'
             message += '\n'
             if type(self.request_packet.html_file) == str:
