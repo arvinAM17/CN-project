@@ -32,9 +32,10 @@ class Server:
                 break
 
             req = RequestPacket(str(data, 'utf-8'))
-            # print('--code:', req.code)
-            # print('--version', req.can_gzip)
-            # print('--gzip:', req.can_gzip)
+            print('--code:', req.code)
+            print('--version', req.request_version)
+            print('--log:', req.log())
+            print('--add:', req.main_address)
 
             if req.request_address == '/':
                 with open("Files/index.html", "rb") as html:
@@ -60,6 +61,7 @@ class Server:
             else:
                 req.set_file()
             print('--log:', req.log())
+
             to_send = ResponsePacket(req).message
             c.send(to_send)
 

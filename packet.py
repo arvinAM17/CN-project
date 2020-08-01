@@ -9,6 +9,7 @@ class RequestPacket:
         self.request_address: str = ''
         self.request_version: str = ''
         self.connection_type: int = CLOSED
+        self.main_address: str = ''
         self.encoding: list = []
         self.timer: int = 60
         self.can_gzip: bool = False
@@ -83,6 +84,18 @@ class RequestPacket:
             self.file_type = file_type
         else:
             self.code = 404
+
+    def set_main_address(self):
+        lines = self.string.split('\r\n')
+        temp_lines = []
+        for i in range(1, len(lines)):
+            temp_lines.append(lines[i].split('\r')[0])
+        lines = temp_lines
+        for line in lines:
+            if line == '':
+                continue
+            if line[:4] == 'Host':
+                self.main_address = line[6:]
 
 
 class ResponsePacket:
