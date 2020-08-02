@@ -23,7 +23,8 @@ class Server:
             t = threading.Thread(target=self.communicate, args=(c,))
             t.start()
 
-    def communicate(self, c: socket.socket):
+    @staticmethod
+    def communicate(c: socket.socket):
         while True:
             data = c.recv(1024)
             # print(str(data, 'utf-8'))
