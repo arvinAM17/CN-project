@@ -2,7 +2,7 @@
 import socket
 import threading
 from packet import RequestPacket, ResponsePacket
-import gzip
+import gzip, time, constants
 
 
 class Server:
@@ -25,10 +25,13 @@ class Server:
 
     @staticmethod
     def communicate(c: socket.socket):
+        time_to_stop = time.time() + 1200
         while True:
+            if time_to_stop <= time.time():
+                break
             data = c.recv(1024)
             # print(str(data, 'utf-8'))
-            if not data:
+            if not data or time_to_stop <= time.time():
                 print('Bye')
                 break
 
@@ -65,6 +68,11 @@ class Server:
 
             to_send = ResponsePacket(req).message
             c.send(to_send)
+
+            if req.connection_type == constants.CLOSED:
+                break
+            else:
+                time_to_stop = time.time() + req.timer
 
         c.close()
 

@@ -11,8 +11,8 @@ STATUS_COUNT = 2
 TOP_K = 3
 EXIT = 4
 
-KEEP_ALIVE_CONNECTION = 0
-CLOSED = 1
+KEEP_ALIVE_CONNECTION = True
+CLOSED = False
 
 code_message = {
     200: 'OK',
