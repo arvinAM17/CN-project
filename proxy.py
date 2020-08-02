@@ -7,10 +7,8 @@ import constants
 
 
 class ProxyServer:
-    packets_from_client = []
-    packets_from_server = []
     connection_data = {'pls': {'ps': [], 'pc': [], 'bs': []},
-                       'type': {'t/h': 0, 't/p': 0, 'i/p': 0, 'i/jpg': 0, 'i:jpeg': 0},
+                       'type': {'t/h': 0, 't/p': 0, 'i/p': 0, 'i/jpg': 0, 'i/jpeg': 0},
                        'stat': {200: 0, 301: 0, 304: 0, 400: 0, 404: 0, 405: 0, 501: 0},
                        'visited': {}}
 
@@ -97,13 +95,16 @@ class ProxyServer:
                     cut_off = int(e.__str__().split(':')[0].split(' ')[-1])
                     print('%%%%%%%%%%%%%%%%%%')
                     print('%%%%%%%%%%%%%%%%%%')
+
+                print('---------arvin---------')
+                print('---------tot data' + str((tot_dat[:cut_off] if cut_off > 0 else tot_dat), 'utf-8'))
+                self.update_connection_data(tot_dat, True, cut_off)
+
                 if to_close == constants.CLOSED or RequestPacket(
                         str(tot_dat[:cut_off], 'utf-8')).connection_type == constants.CLOSED:
                     connected_servers[add_to_req].close()
                     del connected_servers[add_to_req]
                     break
-
-                self.update_connection_data(tot_dat, True, cut_off)
 
             except socket.gaierror:
                 print('#######################################')
@@ -117,10 +118,10 @@ class ProxyServer:
     def telnet(self):
         self.s_telnet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s_telnet.bind((self.telnet_host, self.telnet_port))
-        print("proxy server bound to port", self.telnet_port)
+        print("telnet server bound to port", self.telnet_port)
 
         self.s_telnet.listen(5)
-        print("proxy server is listening")
+        print("telnet server is listening")
 
         while True:
             c, address = self.s_telnet.accept()
@@ -143,7 +144,6 @@ class ProxyServer:
             if char != ';':
                 command += char
             else:
-                print(command)
                 response = self.get_command_response(command)
                 c.send(bytes('\r' + command + '\n\r' + response, 'utf-8'))
                 if response.split('\n\r') == 'Bye':
@@ -177,7 +177,7 @@ class ProxyServer:
 
         elif command == 'status count':
             for code in constants.code_message:
-                response += str(code) + constants.code_message[code] + ': '
+                response += str(code) + ' ' + constants.code_message[code] + ': '
                 response += str(self.connection_data['stat'][code])
                 response += '\n\r'
 
@@ -187,7 +187,7 @@ class ProxyServer:
         elif command == 'type count':
             for types in constants.file_types:
                 response += types + ': '
-                response += str(self.connection_data['type'][constants.file_types[types]])
+                response += str(self.connection_data['type'][constants.file_types[types]]) + '\n\r'
 
         elif command[:3] == 'top':
             temp = command.split(' ')
@@ -197,10 +197,10 @@ class ProxyServer:
             temp_keys = list(temp.keys())
             if len(temp) > k:
                 for i in range(k):
-                    response += str(i + 1) + '. ' + temp[temp_keys[i]] + '\n\r'
+                    response += str(i + 1) + '. ' + temp_keys[i] + '\n\r'
             else:
                 for i in range(len(temp)):
-                    response += str(i + 1) + '. ' + temp[temp_keys[i]] + '\n\r'
+                    response += str(i + 1) + '. ' + temp_keys[i] + '\n\r'
         else:
             response += '400 Bad Request'
 
@@ -218,7 +218,11 @@ class ProxyServer:
         packet = str(data, 'utf-8').split('\r\n')
         for line in packet:
             if line.split(': ')[0] == 'Content-Type':
-                return constants.file_types[line.split(': ')[1].split(';')[0]]
+                content_type = line.split(': ')[1].split(';')[0]
+                if content_type in constants.file_types:
+                    return constants.file_types[line.split(': ')[1].split(';')[0]]
+                else:
+                    return 'a'
 
     @staticmethod
     def get_packet_status(data: bytes) -> int:
@@ -239,8 +243,11 @@ class ProxyServer:
                 self.connection_data['pls']['bs'].append(len(packet) - cutoff)
             if cutoff > 0:
                 packet = packet[:cutoff]
-            self.connection_data['type'][self.get_packet_type(packet)] += 1
-            self.connection_data['stat'][self.get_packet_status(packet)] += 1
+            if self.get_packet_type(packet) != 'a':
+                self.connection_data['type'][self.get_packet_type(packet)] += 1
+            code = self.get_packet_status(packet)
+            if code in self.connection_data['stat']:
+                self.connection_data['stat'][code] += 1
 
         else:
             self.connection_data['pls']['pc'].append(len(packet))
@@ -252,4 +259,3 @@ class ProxyServer:
 
 
 proxy = ProxyServer()
-# telnet = TelnetListener()
