@@ -5,19 +5,34 @@ IMG_JPEG_ENCODING = 3
 IMG_PNG_ENCODING = 4
 GZIP_ENCODING = 5
 
+PACKET_LENGTH_STATS = 0
+TYPE_COUNT = 1
+STATUS_COUNT = 2
+TOP_K = 3
+EXIT = 4
 
 KEEP_ALIVE_CONNECTION = 0
 CLOSED = 1
 
 code_message = {
     200: 'OK',
+    301: 'Moved Permanently',
+    304: 'Not Modified',
     400: 'Bad Request',
-    501: 'Not Implemented',
-    405: 'Method Not Allowed',
     404: 'Not Found',
+    405: 'Method Not Allowed',
+    501: 'Not Implemented',
 }
 
 standard_methods = ['GET', 'DELETE', 'HEAD', 'POST', 'PUT']
+
+file_types = {
+    'text/html': 't/h',
+    'text/plain': 't/p',
+    'image/png': 'i/p',
+    'image/jpeg': 'i/jpeg',
+    'image/jpg': 'i/jpg',
+}
 
 error_message = {
     400: 'Request message not in the right format.',

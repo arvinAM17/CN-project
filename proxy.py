@@ -2,12 +2,17 @@
 import socket
 import threading
 from packet import RequestPacket
+import numpy as np
+import constants
 
 
 class ProxyServer:
-    packet_server_length = []
-    packet_client_length = []
-    body_server_length = []
+    packets_from_client = []
+    packets_from_server = []
+    connection_data = {'pls': {'ps': [], 'pc': [], 'bs': []},
+                       'type': {'t/h': 0, 't/p': 0, 'i/p': 0, 'i/jpg': 0, 'i:jpeg': 0},
+                       'stat': {200: 0, 301: 0, 304: 0, 400: 0, 404: 0, 405: 0, 501: 0},
+                       'visited': {}}
 
     def __init__(self):
         self.telnet_port = 8091
@@ -111,18 +116,111 @@ class ProxyServer:
                 command += char
             else:
                 print(command)
-                c.send(bytes('\r' + command + '\n\r' + self.get_command_response(command), 'utf-8'))
+                response = self.get_command_response(command)
+                c.send(bytes('\r' + command + '\n\r' + response, 'utf-8'))
+                if response.split('\n\r') == 'Bye':
+                    break
                 command = ''
 
         c.close()
 
-    @staticmethod
-    def get_command_response(command: str) -> str:
+    def get_command_response(self, command: str) -> str:
         response = ''
-        # if command
-        # TODO
+        if command == 'packet length stats':
+            response += 'Packet length received from server(mean, std): ('
+            bigger_temp = self.connection_data['pls']
+            temp = bigger_temp['ps']
+            if len(temp) > 0:
+                response += str(sum(temp) / len(temp)) + ', ' + str(np.std(np.array(temp))) + ')\n\r'
+            else:
+                response += '0, 0)\n\r'
+            response += 'Packet length received from client(mean, std): ('
+            temp = bigger_temp['pc']
+            if len(temp) > 0:
+                response += str(sum(temp) / len(temp)) + ', ' + str(np.std(np.array(temp))) + ')\n\r'
+            else:
+                response += '0, 0)\n\r'
+            response += 'Body length received from server(mean, std): ('
+            temp = bigger_temp['bs']
+            if len(temp) > 0:
+                response += str(sum(temp) / len(temp)) + ', ' + str(np.std(np.array(temp))) + ')\n\r'
+            else:
+                response += '0, 0)\n\r'
+
+        elif command == 'status count':
+            for code in constants.code_message:
+                response += str(code) + constants.code_message[code] + ': '
+                response += str(self.connection_data['stat'][code])
+                response += '\n\r'
+
+        elif command == 'exit':
+            response += 'Bye'
+
+        elif command == 'type count':
+            for types in constants.file_types:
+                response += types + ': '
+                response += str(self.connection_data['type'][constants.file_types[types]])
+
+        elif command[:3] == 'top':
+            temp = command.split(' ')
+            k = int(temp[1])
+            temp = self.connection_data['visited'].copy()
+            temp = {k: v for k, v in sorted(temp.items(), key=lambda item: item[1])}
+            temp_keys = list(temp.keys())
+            if len(temp) > k:
+                for i in range(k):
+                    response += str(i + 1) + '. ' + temp[temp_keys[i]] + '\n\r'
+            else:
+                for i in range(len(temp)):
+                    response += str(i + 1) + '. ' + temp[temp_keys[i]] + '\n\r'
+        else:
+            response += '400 Bad Request'
+
         response += '\n\r'
         return response
+
+    @staticmethod
+    def get_body_length(data: bytes) -> int:
+        packet = str(data, 'utf-8').split('\r\n\r\n')
+        body = packet[1]
+        return len(body)
+
+    @staticmethod
+    def get_packet_type(data: bytes) -> str:
+        packet = str(data, 'utf-8').split('\r\n')
+        for line in packet:
+            if line.split(': ')[0] == 'Content-Type':
+                return constants.file_types[line.split(': ')[1].split(';')[0]]
+
+    @staticmethod
+    def get_packet_status(data: bytes) -> int:
+        return int(str(data, 'utf-8').split('\r\n')[0].split(' ')[1])
+
+    @staticmethod
+    def get_packet_host(data: bytes) -> str:
+        req = RequestPacket(str(data, 'utf-8'))
+        req.set_main_address()
+        return req.main_address
+
+    def update_connection_data(self, packet: bytes, is_server: bool, cutoff=0):
+        if is_server:
+            self.connection_data['pls']['ps'].append(len(packet))
+            if cutoff == 0:
+                self.connection_data['pls']['bs'].append(self.get_body_length(packet))
+            else:
+                self.connection_data['pls']['bs'].append(len(packet) - cutoff)
+            if cutoff > 0:
+                packet = packet[:cutoff]
+            self.connection_data['type'][self.get_packet_type(packet)] += 1
+            self.connection_data['stat'][self.get_packet_status(packet)] += 1
+
+        else:
+            self.connection_data['pls']['pc'].append(len(packet))
+            host = self.get_packet_host(packet)
+            if host in self.connection_data['visited']:
+                self.connection_data['visited'][host] += 1
+            else:
+                self.connection_data['visited'][host] = 1
 
 
 proxy = ProxyServer()
