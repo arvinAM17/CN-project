@@ -41,8 +41,7 @@ class ProxyServer:
             t = threading.Thread(target=self.proxy_communicate, args=(c,))
             t.start()
 
-    @staticmethod
-    def proxy_communicate(c: socket.socket):
+    def proxy_communicate(self, c: socket.socket):
         while True:
             try:
                 data = c.recv(500000)
@@ -52,6 +51,8 @@ class ProxyServer:
             if not data:
                 print('Bye')
                 break
+
+            self.update_connection_data(data, False, 0)
 
             req = RequestPacket(str(data, 'utf-8'))
             req.set_main_address()
@@ -85,15 +86,15 @@ class ProxyServer:
                         break
 
                 c.send(tot_dat)
-                cut_off=0
+                cut_off = 0
                 try:
-                    _temp=str(tot_dat, 'utf-8')
+                    _temp = str(tot_dat, 'utf-8')
 
                 except UnicodeDecodeError as e:
                     print('%%%%%%%%%%%%%%%%%%')
                     print('%%%%%%%%%%%%%%%%%%')
                     print(e.__str__().split(':')[0].split(' ')[-1])
-                    cut_off=int(e.__str__().split(':')[0].split(' ')[-1])
+                    cut_off = int(e.__str__().split(':')[0].split(' ')[-1])
                     print('%%%%%%%%%%%%%%%%%%')
                     print('%%%%%%%%%%%%%%%%%%')
                 if to_close == constants.CLOSED or RequestPacket(
@@ -101,6 +102,9 @@ class ProxyServer:
                     connected_servers[add_to_req].close()
                     del connected_servers[add_to_req]
                     break
+
+                self.update_connection_data(tot_dat, True, cut_off)
+
             except socket.gaierror:
                 print('#######################################')
                 print("there was an error resolving the host")
