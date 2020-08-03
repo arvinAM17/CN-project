@@ -36,15 +36,18 @@ class Server:
                 break
 
             req = RequestPacket(str(data, 'utf-8'))
-            print('--code:', req.code)
-            print('--version', req.request_version)
+            # print('--code:', req.code)
+            # print('--version', req.request_version)
             print('--log:', req.log())
-            print('--add:', req.main_address)
+            # print('--add:', req.request_address)
 
             if req.request_address == '/':
                 with open("Files/index.html", "rb") as html:
                     f = html.read()
-                req.set_file(f, 'text/html')
+                if req.can_gzip:
+                    req.set_file(gzip.compress(f), 'text/html')
+                else:
+                    req.set_file(f, 'text/plain')
 
             elif req.request_address == '/123.jpg':
                 with open("Files" + req.request_address, "rb") as image:
@@ -67,7 +70,10 @@ class Server:
             print('--log:', req.log())
 
             to_send = ResponsePacket(req).message
+            # print(str(to_send,'utf-8'))
             c.send(to_send)
+
+            # print('SENT')
 
             if req.connection_type == constants.CLOSED:
                 break
