@@ -141,12 +141,13 @@ class ProxyServer:
             if not data:
                 print('Bye')
                 break
-            if char != ';':
+            if char[len(char) - 1] != ';':
                 command += char
             else:
                 response = self.get_command_response(command)
                 c.send(bytes('\r' + command + '\n\r' + response, 'utf-8'))
                 if response.split('\n\r') == 'Bye':
+                    c.close()
                     break
                 command = ''
 
@@ -197,10 +198,12 @@ class ProxyServer:
             temp_keys = list(temp.keys())
             if len(temp) > k:
                 for i in range(k):
-                    response += str(i + 1) + '. ' + temp_keys[i] + '\n\r'
+                    site = temp_keys[i].split(':')[0]
+                    response += str(i + 1) + '. ' + site + '\n\r'
             else:
                 for i in range(len(temp)):
-                    response += str(i + 1) + '. ' + temp_keys[i] + '\n\r'
+                    site = temp_keys[i].split(':')[0]
+                    response += str(i + 1) + '. ' + site + '\n\r'
         else:
             response += '400 Bad Request'
 
