@@ -35,7 +35,7 @@ class ProxyServer:
 
         while True:
             c, address = self.s_proxy.accept()
-            print('Connected to :', address[0], ':', address[1])
+            print('\nConnected to :', address[0], ':', address[1])
             t = threading.Thread(target=self.proxy_communicate, args=(c, address,))
             t.start()
 
@@ -56,7 +56,7 @@ class ProxyServer:
             req.set_main_address()
             # print('--main add:', req.main_address)
             # print('--req add:', req.request_address)
-            print('REQUEST: ',
+            print('\nREQUEST: ',
                   '[' + ResponsePacket.get_date() + '] [' + str(client_address[0]) + ' : ' + str(client_address[
                                                                                                      1]) + '] [' + req.main_address + ' : 80] "' + req.request_string() + '"')
             to_close = req.connection_type
