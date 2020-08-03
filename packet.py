@@ -28,7 +28,7 @@ class RequestPacket:
             if lines[i] == '':
                 continue
             if len(lines[i].split(': ')) != 2:
-                print('here', len(lines[i]))
+                # print('here', len(lines[i]))
                 return 400
             temp_lines.append(lines[i].split('\r')[0])
         lines = temp_lines

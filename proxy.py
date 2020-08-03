@@ -1,7 +1,7 @@
 # import socket programming library
 import socket, constants
 import threading
-from packet import RequestPacket
+from packet import RequestPacket, ResponsePacket
 import numpy as np
 import constants
 
@@ -36,16 +36,16 @@ class ProxyServer:
         while True:
             c, address = self.s_proxy.accept()
             print('Connected to :', address[0], ':', address[1])
-            t = threading.Thread(target=self.proxy_communicate, args=(c,))
+            t = threading.Thread(target=self.proxy_communicate, args=(c, address,))
             t.start()
 
-    def proxy_communicate(self, c: socket.socket):
+    def proxy_communicate(self, c: socket.socket, client_address):
         while True:
             try:
                 data = c.recv(500000)
             except ConnectionResetError or OSError:
                 break
-            print(str(data, 'utf-8'))
+            # print(str(data, 'utf-8'))
             if not data:
                 print('Bye')
                 break
@@ -54,9 +54,11 @@ class ProxyServer:
 
             req = RequestPacket(str(data, 'utf-8'))
             req.set_main_address()
-            print('--main add:', req.main_address)
-            print('--req add:', req.request_address)
-
+            # print('--main add:', req.main_address)
+            # print('--req add:', req.request_address)
+            print('REQUEST: ',
+                  '[' + ResponsePacket.get_date() + '] [' + str(client_address[0]) + ' : ' + str(client_address[
+                                                                                                     1]) + '] [' + req.main_address + ' : 80] "' + req.request_string() + '"')
             to_close = req.connection_type
 
             connected_servers = dict()
@@ -64,9 +66,9 @@ class ProxyServer:
             port_to_req = 80
 
             try:
-                print(req.main_address, req.main_address[0])
+                # print(req.main_address, req.main_address[0])
                 add_to_req = socket.gethostbyname(req.main_address)
-                print(add_to_req)
+                # print(add_to_req)
 
                 if add_to_req not in connected_servers.keys():
                     connected_servers[add_to_req] = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,28 +85,50 @@ class ProxyServer:
                     if new_data == b'':
                         break
 
-                c.send(tot_dat)
                 cut_off = 0
                 try:
                     _temp = str(tot_dat, 'utf-8')
+                    print('\nRESPONSE:',
+                          '[' + ResponsePacket.get_date() + '] [' + str(client_address[0]) + ' : ' + str(client_address[
+                                                                                                             1]) + '] [' + req.main_address + ' : 80] "' +
+                          str(tot_dat, 'utf-8').split('\n\r')[
+                              0].split('\r')[0] + '" for "' + req.request_string() + '"')
 
                 except UnicodeDecodeError as e:
-                    print('%%%%%%%%%%%%%%%%%%')
-                    print('%%%%%%%%%%%%%%%%%%')
-                    print(e.__str__().split(':')[0].split(' ')[-1])
+                    # print('%%%%%%%%%%%%%%%%%%')
+                    # print('%%%%%%%%%%%%%%%%%%')
+                    # print(e.__str__().split(':')[0].split(' ')[-1])
                     cut_off = int(e.__str__().split(':')[0].split(' ')[-1])
-                    print('%%%%%%%%%%%%%%%%%%')
-                    print('%%%%%%%%%%%%%%%%%%')
+                    print('\nRESPONSE:',
+                          '[' + ResponsePacket.get_date() + '] [' + str(client_address[0]) + ' : ' + str(client_address[
+                                                                                                             1]) + '] [' + req.main_address + ' : 80] "' +
+                          str(tot_dat[:cut_off], 'utf-8').split('\n\r')[
+                              0].split('\r')[0] + '" for "' + req.request_string() + '"')
+                    # print('%%%%%%%%%%%%%%%%%%')
+                    # print('%%%%%%%%%%%%%%%%%%')
 
-                print('---------arvin---------')
-                print('---------tot data' + str((tot_dat[:cut_off] if cut_off > 0 else tot_dat), 'utf-8'))
+                # print('---------arvin---------')
+                # print('---------tot data' + str((tot_dat[:cut_off] if cut_off > 0 else tot_dat), 'utf-8'))
+                # print('RESPONSE: ',
+                #       '[' + ResponsePacket.get_date() + '] [' + str(client_address[0]) + ' : ' + str(client_address[
+                #           1]) + '] [' + req.main_address + ' : 80] "' +
+                #       str((tot_dat[:cut_off] if cut_off > 0 else tot_dat), 'utf-8').split('\n')[
+                #           0] + '" for "' + req.request_string() + '"')
+
                 self.update_connection_data(tot_dat, True, cut_off)
-
-                if to_close == constants.CLOSED or RequestPacket(
-                        str(tot_dat[:cut_off], 'utf-8')).connection_type == constants.CLOSED:
-                    connected_servers[add_to_req].close()
-                    del connected_servers[add_to_req]
-                    break
+                c.send(tot_dat)
+                if cut_off == 0:
+                    if to_close == constants.CLOSED or RequestPacket(
+                            str(tot_dat, 'utf-8')).connection_type == constants.CLOSED:
+                        connected_servers[add_to_req].close()
+                        del connected_servers[add_to_req]
+                        break
+                else:
+                    if to_close == constants.CLOSED or RequestPacket(
+                            str(tot_dat[:cut_off], 'utf-8')).connection_type == constants.CLOSED:
+                        connected_servers[add_to_req].close()
+                        del connected_servers[add_to_req]
+                        break
 
             except socket.gaierror:
                 print('#######################################')
